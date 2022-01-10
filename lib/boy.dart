@@ -15,16 +15,28 @@ class BoyClass extends StatefulWidget {
   _BoyClassState createState() => _BoyClassState();
 }
 
-class _BoyClassState extends State<BoyClass> {
+class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin {
 
   List<Example> catArr = [];
   List<Name> nameArr = [];
+  late TabController tabController;
+  TextEditingController tec = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     religionCategory();
-    nameApi("3", 1);
+    tabController = TabController(length: 3, vsync: this)..addListener(() {setState(() {
+      if (tabController.index == 0) {
+        nameApi("3", 1);
+      } else if(tabController.index == 1){
+        nameApi("8", 1);
+      } else{
+        nameApi("10", 1);
+      }
+
+    });});
+    // nameApi("3", 1);
   }
 
 
@@ -44,9 +56,7 @@ class _BoyClassState extends State<BoyClass> {
           ),
 
         DefaultTabController(
-          length: catArr.length,
-          // final tabindex = DefaultTabController.of(context)!.index;
-
+          length: 3,
           child: Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
@@ -66,7 +76,6 @@ class _BoyClassState extends State<BoyClass> {
                 Image.asset("assets/header/header_fav@2x.png", width: 35, height: 35,),
                 GestureDetector(
                   onTap: (){
-                    // showSearch(context: context, delegate: MyCustemSearch())
                   },
                   child: Image.asset("assets/header/header_search@2x.png", width: 35, height: 35,)
                 ),
@@ -74,32 +83,7 @@ class _BoyClassState extends State<BoyClass> {
               ),
               automaticallyImplyLeading: false,
               bottom: TabBar(
-                        onTap: (index){
-                          // setState(() {
-                          //   isLoading = true;
-                          // });
-                          switch (index) {
-                            case 0: nameApi("3", 1);
-                            // catId = "3";
-                            // genderNo = 1;
-                            // isLoading = true;
-                            // print(isLoading);
-                            break;
-                              
-                            case 1: nameApi("8", 1);
-                            // catId = "8";
-                            // genderNo = 1;
-                            // isLoading = true;
-                            break;
-
-                            case 2: nameApi("10", 1);
-                            // catId = "10";
-                            // genderNo = 1;
-                            // isLoading = true;
-                            break;
-                          }
-                        },
-                        // controller: TabController,
+                        controller: tabController,
                         padding: EdgeInsets.fromLTRB(5, 0, 5, 0),
                         labelColor: Colors.black,
                         labelStyle: TextStyle(
@@ -111,20 +95,24 @@ class _BoyClassState extends State<BoyClass> {
                           borderRadius: BorderRadius.circular(10),
                           color: Colors.white
                         ),
-
+        
                      
-                        tabs: List.generate(catArr.length,(index) {
-                          return Tab(text: catArr[index].catName);
-                        }),
-
+                        tabs: catArr.map((e) {
+                          return Tab(child: Text(e.catName.toString()),);
+                        }).toList()
+                        // List.generate(catArr.length,(index) {
+                        //   return Tab(text: catArr[index].catName);
+                        // }),
+        
                         
                       ),
             ),
-
+        
            
-            body: Padding(
+            body: nameArr.isEmpty ? Center(child: CircularProgressIndicator()) : Padding(
               padding: const EdgeInsets.fromLTRB(5, 5, 5, 0),
               child: TabBarView(
+                controller: tabController,
                 children: [
                  
                   bodyNameList(),
@@ -136,7 +124,7 @@ class _BoyClassState extends State<BoyClass> {
                 ]
               ),
             ),
-          )
+          ),
         ),
       ],
     );
@@ -151,19 +139,10 @@ class _BoyClassState extends State<BoyClass> {
     setState(() {
       
     });    
+    nameApi("3", 1);
   }
 
-  // nameApi(String catId,int gendeNo){
-  //   http
-  //     .get(Uri.parse("https://mapi.trycatchtech.com/v1/naamkaran/post_list_by_cat_and_gender?category_id=$catId&gender=$gendeNo"))
-  //     .then((resp) {
-  //       nameArr.clear();
-  //       var jsonResp = json.decode(resp.body);
-  //       for (var item in jsonResp) {
-  //         nameArr.add(Name.fromJson(item)); 
-  //       }
-  //     });
-  // }
+ 
 
   nameApi(String catId,int genderNo)async{
     nameArr.clear();
@@ -172,122 +151,163 @@ class _BoyClassState extends State<BoyClass> {
     for (var item in jsonResp) {
       nameArr.add(Name.fromJson(item)); 
     }
-    // // print("hello");
-    // if (nameArr.isNotEmpty) {
-    //   setState(() {
-    //     print(nameArr.length);
-    //   });
-    // }
-    // return nameArr;
     setState(() {
-      // isLoading = false;
+
     });
   }
 
   Widget bodyNameList(){
-    // nameApi(catId, genderNo);
-    // print("hello");
-    // print(0)
-    // print("$catId and $genderNo");
-    // print(nameArr.length);
-    // if (nameArr.isEmpty) {
-    //   return CircularProgressIndicator();
-    // }
-   
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.8), 
       ),
     
-      child: nameArr.length == 0 ?  const Center(child: CircularProgressIndicator()) : ListView.separated(
-        itemBuilder: (context,index){
-          // isLoading = true;
-          // print(isLoading);
-          return Container(
-            height: 100,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              color: Colors.white,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(nameArr[index].name!,
-                                style: TextStyle(
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: "Lora" 
+      child: Column(
+        children: [
+          // buildSearch(),
+          Expanded(
+            child: ListView.separated(
+              itemBuilder: (context,index){
+                return Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15),
+                    color: Colors.white,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(nameArr[index].name!,
+                                      style: TextStyle(
+                                        fontSize: 25,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: "Lora" 
+                                      ),
+                                    ),
+                                                                  
+                                    ExpandableText(                          
+                                      nameArr[index].meaning!, 
+                                      maxLines: 2,
+                                      expandText: "Show more",
+                                      collapseText: "Show less",
+                                      style: TextStyle(
+                                    fontSize: 15,
+                                    fontFamily: "Lora" 
+                                    ),
+                                    )
+                                  ],
                                 ),
                               ),
-                                                            
-                              ExpandableText(                          
-                                nameArr[index].meaning!, 
-                                maxLines: 2,
-                                expandText: "Show more",
-                                collapseText: "Show less",
-                                style: TextStyle(
-                              fontSize: 15,
-                              fontFamily: "Lora" 
-                              ),
-                              )
-                            ],
-                          ),
+                            ),
+          
+                            SizedBox(width: 8,),
+          
+                            Row(                              
+                              children: [
+                                Image.asset("assets/blue_heart@2x.png", 
+                                  width: 35, 
+                                  height: 35, 
+                                ),
+                            
+                                SizedBox(width: 8,),
+          
+                                Image.asset("assets/blue_copy@2x.png", 
+                                  width: 35, 
+                                  height: 35, 
+                                ),
+          
+                                SizedBox(width: 8,),
+                              
+                                Image.asset("assets/blue_share@2x.png", 
+                                  width: 35, 
+                                  height: 35, 
+                                ),
+                              ],
+                            )
+                          ],
                         ),
-                      ),
-
-                      SizedBox(width: 8,),
-
-                      Row(                              
-                        children: [
-                          Image.asset("assets/blue_heart@2x.png", 
-                            width: 35, 
-                            height: 35, 
-                          ),
-                      
-                          SizedBox(width: 8,),
-
-                          Image.asset("assets/blue_copy@2x.png", 
-                            width: 35, 
-                            height: 35, 
-                          ),
-
-                          SizedBox(width: 8,),
-                        
-                          Image.asset("assets/blue_share@2x.png", 
-                            width: 35, 
-                            height: 35, 
-                          ),
-                        ],
-                      )
-                    ],
                   ),
+                );
+              }, 
+              separatorBuilder: (context,index){
+                return Divider();
+              }, 
+              itemCount: nameArr.length
             ),
-          );
-        }, 
-        separatorBuilder: (context,index){
-          return Divider();
-        }, 
-        itemCount: nameArr.length
+          ),
+        ],
       ),
     );
   }
 
-  // Widget bodyNameList(){
-  //   return FutureBuilder(
-  //     future: nameApi(catId!, genderNo!),
-  //     builder: (BuildContext context, AsyncSnapshot snapshot){
-  //       print(snapshot.resp);
-  //       return Container();
-  //     }
+  // Widget buildSearch(){
+  //   return Padding(
+  //     padding: const EdgeInsets.fromLTRB(0, 0, 0, 15),
+  //     child: Container(
+  //       height: 40,
+  //       decoration: BoxDecoration(
+  //         borderRadius: BorderRadius.circular(15),
+  //         color: Colors.white,
+  //       ),
+  //       child: TextField(
+  //         onChanged: (Value){
+  //           setState(() {
+  //             nameArr = nameArr.where((element) => element.conta)
+  //           });
+  //         },
+  //         controller: tec,
+  //         decoration: InputDecoration(
+  //           contentPadding: EdgeInsets.all(8),
+  //           hintText: "Search",
+  //         ),
+  //       ),
+  //     ),
   //   );
   // }
 }
 
+
+class DataSearch extends SearchDelegate<String>{
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    // TODO: implement buildActions
+    return [IconButton(onPressed: (){}, icon: Icon(Icons.clear))];
+    throw UnimplementedError();
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    // TODO: implement buildLeading
+    return IconButton(
+      onPressed: (){}, 
+      icon: AnimatedIcon(
+        icon: AnimatedIcons.arrow_menu,
+        progress: transitionAnimation,
+      )
+    );
+    throw UnimplementedError();
+  }
+
+  // 8.30
+
+  @override
+  Widget buildResults(BuildContext context) {
+    // TODO: implement buildResults
+    throw UnimplementedError();
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    // TODO: implement buildSuggestions
+    throw UnimplementedError();
+  }
+
+}
   
