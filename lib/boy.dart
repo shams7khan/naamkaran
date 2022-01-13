@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:app_naamkaran/girl.dart';
 import 'package:app_naamkaran/model/category.dart';
 import 'package:app_naamkaran/model/name.dart';
 import 'package:flutter/cupertino.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:expandable_text/expandable_text.dart';
+
 
 class BoyClass extends StatefulWidget {
   const BoyClass({ Key? key }) : super(key: key);
@@ -19,6 +21,8 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
 
   List<Example> catArr = [];
   List<Name> nameArr = [];
+  List<Name> nameArrForDisplay = [];
+  bool isLoading = true;
   late TabController tabController;
   TextEditingController tec = TextEditingController();
 
@@ -36,13 +40,13 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
       }
 
     });});
-    // nameApi("3", 1);
+   
   }
 
 
   @override
   Widget build(BuildContext context) {
-    if (catArr.isEmpty) {
+    if(catArr.isEmpty){
       return Center(child: CircularProgressIndicator());
     }
     return Stack(
@@ -57,7 +61,7 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
 
         DefaultTabController(
           length: 3,
-          child: Scaffold(
+          child: isLoading == true ? Center(child: CircularProgressIndicator()) : Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
               elevation: 0.0,
@@ -72,13 +76,14 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
                   child: Image.asset("assets/header/header_back@2x.png", width: 35, height: 35,)
                 ),
                 Image.asset("assets/header/header_logo@2x.png", width: 150,),
-                Image.asset("assets/header/header_girl@2x.png", width: 50, height: 50,),
-                Image.asset("assets/header/header_fav@2x.png", width: 35, height: 35,),
                 GestureDetector(
+                  child: Image.asset("assets/header/header_girl@2x.png", width: 50, height: 50,),
                   onTap: (){
+                    Get.to(GirlClass());
                   },
-                  child: Image.asset("assets/header/header_search@2x.png", width: 35, height: 35,)
                 ),
+                Image.asset("assets/header/header_fav@2x.png", width: 35, height: 35,),
+                
                 ],
               ),
               automaticallyImplyLeading: false,
@@ -100,16 +105,12 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
                         tabs: catArr.map((e) {
                           return Tab(child: Text(e.catName.toString()),);
                         }).toList()
-                        // List.generate(catArr.length,(index) {
-                        //   return Tab(text: catArr[index].catName);
-                        // }),
-        
-                        
+                                            
                       ),
             ),
         
            
-            body: nameArr.isEmpty ? Center(child: CircularProgressIndicator()) : Padding(
+            body: Padding(
               padding: const EdgeInsets.fromLTRB(5, 5, 5, 0),
               child: TabBarView(
                 controller: tabController,
@@ -137,7 +138,7 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
       catArr.add(Example.fromJson(item));
     }
     setState(() {
-      
+
     });    
     nameApi("3", 1);
   }
@@ -145,15 +146,26 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
  
 
   nameApi(String catId,int genderNo)async{
-    nameArr.clear();
-    var resp = await http.get(Uri.parse("https://mapi.trycatchtech.com/v1/naamkaran/post_list_by_cat_and_gender?category_id=$catId&gender=$genderNo"));
-    var jsonResp = json.decode(resp.body);
-    for (var item in jsonResp) {
-      nameArr.add(Name.fromJson(item)); 
-    }
-    setState(() {
-
-    });
+    if (isLoading == true) {
+      nameArr.clear();
+      nameArrForDisplay.clear();
+      var resp = await http.get(Uri.parse(
+          "https://mapi.trycatchtech.com/v1/naamkaran/post_list_by_cat_and_gender?category_id=$catId&gender=$genderNo"));
+      var jsonResp = json.decode(resp.body);
+      for (var item in jsonResp) {
+        nameArr.add(Name.fromJson(item));
+      }
+      
+      setState(() {
+        isLoading = false;
+        nameArrForDisplay = nameArr;
+      });
+    } else {
+      setState(() {
+        isLoading = true;
+      });
+      nameApi(catId, genderNo);
+    }    
   }
 
   Widget bodyNameList(){
@@ -164,82 +176,16 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
     
       child: Column(
         children: [
-          // buildSearch(),
           Expanded(
             child: ListView.separated(
               itemBuilder: (context,index){
-                return Container(
-                  height: 100,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    color: Colors.white,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(nameArr[index].name!,
-                                      style: TextStyle(
-                                        fontSize: 25,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: "Lora" 
-                                      ),
-                                    ),
-                                                                  
-                                    ExpandableText(                          
-                                      nameArr[index].meaning!, 
-                                      maxLines: 2,
-                                      expandText: "Show more",
-                                      collapseText: "Show less",
-                                      style: TextStyle(
-                                    fontSize: 15,
-                                    fontFamily: "Lora" 
-                                    ),
-                                    )
-                                  ],
-                                ),
-                              ),
-                            ),
-          
-                            SizedBox(width: 8,),
-          
-                            Row(                              
-                              children: [
-                                Image.asset("assets/blue_heart@2x.png", 
-                                  width: 35, 
-                                  height: 35, 
-                                ),
-                            
-                                SizedBox(width: 8,),
-          
-                                Image.asset("assets/blue_copy@2x.png", 
-                                  width: 35, 
-                                  height: 35, 
-                                ),
-          
-                                SizedBox(width: 8,),
-                              
-                                Image.asset("assets/blue_share@2x.png", 
-                                  width: 35, 
-                                  height: 35, 
-                                ),
-                              ],
-                            )
-                          ],
-                        ),
-                  ),
-                );
+                print(nameArr[index].name);
+                return index == 0 ? searchBar() : listItem(index - 1);
               }, 
               separatorBuilder: (context,index){
                 return Divider();
               }, 
-              itemCount: nameArr.length
+              itemCount: nameArrForDisplay.length + 1
             ),
           ),
         ],
@@ -247,67 +193,102 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
     );
   }
 
-  // Widget buildSearch(){
-  //   return Padding(
-  //     padding: const EdgeInsets.fromLTRB(0, 0, 0, 15),
-  //     child: Container(
-  //       height: 40,
-  //       decoration: BoxDecoration(
-  //         borderRadius: BorderRadius.circular(15),
-  //         color: Colors.white,
-  //       ),
-  //       child: TextField(
-  //         onChanged: (Value){
-  //           setState(() {
-  //             nameArr = nameArr.where((element) => element.conta)
-  //           });
-  //         },
-  //         controller: tec,
-  //         decoration: InputDecoration(
-  //           contentPadding: EdgeInsets.all(8),
-  //           hintText: "Search",
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-}
-
-
-class DataSearch extends SearchDelegate<String>{
-  @override
-  List<Widget>? buildActions(BuildContext context) {
-    // TODO: implement buildActions
-    return [IconButton(onPressed: (){}, icon: Icon(Icons.clear))];
-    throw UnimplementedError();
-  }
-
-  @override
-  Widget? buildLeading(BuildContext context) {
-    // TODO: implement buildLeading
-    return IconButton(
-      onPressed: (){}, 
-      icon: AnimatedIcon(
-        icon: AnimatedIcons.arrow_menu,
-        progress: transitionAnimation,
-      )
+  Widget searchBar(){
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        color: Colors.white,
+      ),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: "Search .. ",
+          suffixIcon: Icon(Icons.search),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.all(10)
+        ),
+        onChanged: (text){
+            text = text.toLowerCase();
+            setState(() {
+              
+              nameArrForDisplay = nameArr.where((tName) {
+                var tNameTitle = tName.name!.toLowerCase();
+                return tNameTitle.contains(text);
+              }).toList();
+            }); 
+          } 
+      ),
     );
-    throw UnimplementedError();
   }
 
-  // 8.30
+  Widget listItem(index){
+    return Container(
+      height: 100,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        color: Colors.white,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(nameArrForDisplay[index].name!,
+                          style: TextStyle(
+                            fontSize: 25,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: "Lora" 
+                          ),
+                        ),
+                                                      
+                        ExpandableText(                          
+                          nameArrForDisplay[index].meaning!, 
+                          maxLines: 2,
+                          expandText: "Show more",
+                          collapseText: "Show less",
+                          style: TextStyle(
+                        fontSize: 15,
+                        fontFamily: "Lora" 
+                        ),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
 
-  @override
-  Widget buildResults(BuildContext context) {
-    // TODO: implement buildResults
-    throw UnimplementedError();
+                SizedBox(width: 8,),
+
+                Row(                              
+                  children: [
+                    Image.asset("assets/blue_heart@2x.png", 
+                      width: 35, 
+                      height: 35, 
+                    ),
+                
+                    SizedBox(width: 8,),
+
+                    Image.asset("assets/blue_copy@2x.png", 
+                      width: 35, 
+                      height: 35, 
+                    ),
+
+                    SizedBox(width: 8,),
+                  
+                    Image.asset("assets/blue_share@2x.png", 
+                      width: 35, 
+                      height: 35, 
+                    ),
+                  ],
+                )
+              ],
+            ),
+      ),
+    );
   }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    // TODO: implement buildSuggestions
-    throw UnimplementedError();
-  }
-
 }
   
