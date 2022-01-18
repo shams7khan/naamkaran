@@ -8,16 +8,18 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:expandable_text/expandable_text.dart';
+import 'package:clipboard/clipboard.dart';
+import 'package:share_plus/share_plus.dart';
 
 
-class GirlClass extends StatefulWidget {
-  const GirlClass({ Key? key }) : super(key: key);
+class GirlUpdate extends StatefulWidget {
+  const GirlUpdate({ Key? key }) : super(key: key);
 
   @override
-  _GirlClassState createState() => _GirlClassState();
+  _GirlUpdateState createState() => _GirlUpdateState();
 }
 
-class _GirlClassState extends State<GirlClass> with SingleTickerProviderStateMixin {
+class _GirlUpdateState extends State<GirlUpdate> with SingleTickerProviderStateMixin {
 
   List<Example> catArr = [];
   List<Name> nameArr = [];
@@ -25,13 +27,22 @@ class _GirlClassState extends State<GirlClass> with SingleTickerProviderStateMix
   bool isLoading = true;
   late TabController tabController;
   TextEditingController tec = TextEditingController();
+  bool ignoreTap = false;
 
   @override
   void initState() {
     super.initState();
     religionCategory();
-    tabController = TabController(length: 3, vsync: this)..addListener(() {setState(() {
-      if (tabController.index == 0) {
+    
+    tabController = TabController(length: 3, vsync: this)..addListener(() {
+      if (isLoading) {
+        return;
+      }
+      setState(() {
+     isLoading = true;
+    });
+    
+     if (tabController.index == 0) {
         nameApi("3", 2);
       } else if(tabController.index == 1){
         nameApi("8", 2);
@@ -39,9 +50,10 @@ class _GirlClassState extends State<GirlClass> with SingleTickerProviderStateMix
         nameApi("10", 2);
       }
 
-    });});
-    
+    });
+   
   }
+  
 
 
   @override
@@ -61,7 +73,7 @@ class _GirlClassState extends State<GirlClass> with SingleTickerProviderStateMix
 
         DefaultTabController(
           length: 3,
-          child: isLoading == true ? Center(child: CircularProgressIndicator()) : Scaffold(
+          child: Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
               elevation: 0.0,
@@ -87,30 +99,39 @@ class _GirlClassState extends State<GirlClass> with SingleTickerProviderStateMix
                 ],
               ),
               automaticallyImplyLeading: false,
-              bottom: TabBar(
-                        controller: tabController,
-                        padding: EdgeInsets.fromLTRB(5, 0, 5, 0),
-                        labelColor: Colors.black,
-                        labelStyle: TextStyle(
-                          fontSize: 18,
-                          fontFamily: "Lora",
-                          fontWeight: FontWeight.bold
-                        ),
-                        indicator: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.white
-                        ),
-        
-                     
-                        tabs: catArr.map((e) {
-                          return Tab(child: Text(e.catName.toString()),);
-                        }).toList()
+              bottom: PreferredSize(
+                preferredSize: Size.fromHeight(kToolbarHeight),
+                child: IgnorePointer(
+                  ignoring: ignoreTap,
+                  child: TabBar(
+                            controller: tabController,
+                            padding: EdgeInsets.fromLTRB(5, 0, 5, 0),
+                            labelColor: Colors.black,
+                            labelStyle: TextStyle(
+                              fontSize: 18,
+                              fontFamily: "Lora",
+                              fontWeight: FontWeight.bold
+                            ),
+                            indicator: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: Colors.white
+                            ),
                         
-                      ),
+                         onTap: (indexNo){
+                 
+                         },
+                            tabs: catArr.map((e) {
+                              return Tab(child: Text(e.catName.toString()),);
+                            }).toList()
+                                                
+                          ),
+                ),
+              ),
             ),
         
-           
-            body: Padding(
+         
+
+            body: isLoading == true ? Center(child: CircularProgressIndicator()) : Padding(
               padding: const EdgeInsets.fromLTRB(5, 5, 5, 0),
               child: TabBarView(
                 controller: tabController,
@@ -146,29 +167,31 @@ class _GirlClassState extends State<GirlClass> with SingleTickerProviderStateMix
  
 
   nameApi(String catId,int genderNo)async{
-    if (isLoading == true) {
+    if (isLoading) {
+      
+      ignoreTap = true;
       nameArr.clear();
       nameArrForDisplay.clear();
+      print("Shamshad");
+      print(nameArr.length);
+      print(nameArrForDisplay.length);
       var resp = await http.get(Uri.parse(
           "https://mapi.trycatchtech.com/v1/naamkaran/post_list_by_cat_and_gender?category_id=$catId&gender=$genderNo"));
       var jsonResp = json.decode(resp.body);
       for (var item in jsonResp) {
         nameArr.add(Name.fromJson(item));
       }
-   
       setState(() {
         isLoading = false;
+        ignoreTap = false;
         nameArrForDisplay = nameArr;
       });
-    } else {
-      setState(() {
-        isLoading = true;
-      });
-      nameApi(catId, genderNo);
-    }    
+    }
+ 
   }
 
   Widget bodyNameList(){
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.8), 
@@ -179,7 +202,6 @@ class _GirlClassState extends State<GirlClass> with SingleTickerProviderStateMix
           Expanded(
             child: ListView.separated(
               itemBuilder: (context,index){
-                print(nameArr[index].name);
                 return index == 0 ? searchBar() : listItem(index - 1);
               }, 
               separatorBuilder: (context,index){
@@ -208,13 +230,14 @@ class _GirlClassState extends State<GirlClass> with SingleTickerProviderStateMix
           contentPadding: EdgeInsets.all(10)
         ),
         onChanged: (text){
+
             text = text.toLowerCase();
-            setState(() {
-             
-              nameArrForDisplay = nameArr.where((tName) {
+            nameArrForDisplay = nameArr.where((tName) {
                 var tNameTitle = tName.name!.toLowerCase();
                 return tNameTitle.contains(text);
-              }).toList();
+              }).toSet().toList();
+            setState(() {
+              
             }); 
           } 
       ),
@@ -273,18 +296,37 @@ class _GirlClassState extends State<GirlClass> with SingleTickerProviderStateMix
                 
                     SizedBox(width: 8,),
 
-                    Image.asset("assets/blue_copy@2x.png",
-                      color: Colors.pink[300], 
-                      width: 35, 
-                      height: 35, 
+                   
+
+                    Material(
+                      child: InkWell(
+                        onTap: (){
+                          FlutterClipboard.copy("${nameArrForDisplay[index].name} \n${nameArrForDisplay[index].meaning}");
+                        },
+                        child: Image.asset("assets/blue_copy@2x.png", 
+                          color: Colors.pink[300],
+                          width: 35, 
+                          height: 35, 
+                        ),
+                        splashColor: Colors.pink,
+                      ),
                     ),
 
+                    
                     SizedBox(width: 8,),
                   
-                    Image.asset("assets/blue_share@2x.png",
-                      color: Colors.pink[300], 
-                      width: 35, 
-                      height: 35, 
+                    Material(
+                      child: InkWell(
+                        onTap: (){
+                          Share.share("${nameArrForDisplay[index].name} \n${nameArrForDisplay[index].meaning}");
+                        },
+                        child: Image.asset("assets/blue_share@2x.png", 
+                          color: Colors.pink[300],
+                          width: 35, 
+                          height: 35, 
+                        ),
+                        splashColor: Colors.pink,
+                      ),
                     ),
                   ],
                 )
