@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:app_naamkaran/girl.dart';
+import 'package:app_naamkaran/girl_update.dart';
 import 'package:app_naamkaran/model/category.dart';
 import 'package:app_naamkaran/model/name.dart';
 import 'package:flutter/cupertino.dart';
@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:expandable_text/expandable_text.dart';
+import 'package:clipboard/clipboard.dart';
+import 'package:share_plus/share_plus.dart';
 
 
 class BoyClass extends StatefulWidget {
@@ -25,13 +27,22 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
   bool isLoading = true;
   late TabController tabController;
   TextEditingController tec = TextEditingController();
+  bool ignoreTap = false;
 
   @override
   void initState() {
     super.initState();
     religionCategory();
-    tabController = TabController(length: 3, vsync: this)..addListener(() {setState(() {
-      if (tabController.index == 0) {
+    
+    tabController = TabController(length: 3, vsync: this)..addListener(() {
+      if (isLoading) {
+        return;
+      }
+      setState(() {
+     isLoading = true;
+    });
+    
+     if (tabController.index == 0) {
         nameApi("3", 1);
       } else if(tabController.index == 1){
         nameApi("8", 1);
@@ -39,9 +50,10 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
         nameApi("10", 1);
       }
 
-    });});
+    });
    
   }
+  
 
 
   @override
@@ -61,7 +73,7 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
 
         DefaultTabController(
           length: 3,
-          child: isLoading == true ? Center(child: CircularProgressIndicator()) : Scaffold(
+          child: Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
               elevation: 0.0,
@@ -79,7 +91,7 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
                 GestureDetector(
                   child: Image.asset("assets/header/header_girl@2x.png", width: 50, height: 50,),
                   onTap: (){
-                    Get.to(GirlClass());
+                    Get.to(GirlUpdate());
                   },
                 ),
                 Image.asset("assets/header/header_fav@2x.png", width: 35, height: 35,),
@@ -87,30 +99,39 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
                 ],
               ),
               automaticallyImplyLeading: false,
-              bottom: TabBar(
-                        controller: tabController,
-                        padding: EdgeInsets.fromLTRB(5, 0, 5, 0),
-                        labelColor: Colors.black,
-                        labelStyle: TextStyle(
-                          fontSize: 18,
-                          fontFamily: "Lora",
-                          fontWeight: FontWeight.bold
-                        ),
-                        indicator: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.white
-                        ),
-        
-                     
-                        tabs: catArr.map((e) {
-                          return Tab(child: Text(e.catName.toString()),);
-                        }).toList()
-                                            
-                      ),
+              bottom: PreferredSize(
+                preferredSize: Size.fromHeight(kToolbarHeight),
+                child: IgnorePointer(
+                  ignoring: ignoreTap,
+                  child: TabBar(
+                            controller: tabController,
+                            padding: EdgeInsets.fromLTRB(5, 0, 5, 0),
+                            labelColor: Colors.black,
+                            labelStyle: TextStyle(
+                              fontSize: 18,
+                              fontFamily: "Lora",
+                              fontWeight: FontWeight.bold
+                            ),
+                            indicator: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: Colors.white
+                            ),
+                        
+                         onTap: (indexNo){
+                 
+                         },
+                            tabs: catArr.map((e) {
+                              return Tab(child: Text(e.catName.toString()),);
+                            }).toList()
+                                                
+                          ),
+                ),
+              ),
             ),
         
-           
-            body: Padding(
+         
+
+            body: isLoading == true ? Center(child: CircularProgressIndicator()) : Padding(
               padding: const EdgeInsets.fromLTRB(5, 5, 5, 0),
               child: TabBarView(
                 controller: tabController,
@@ -146,29 +167,31 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
  
 
   nameApi(String catId,int genderNo)async{
-    if (isLoading == true) {
+    if (isLoading) {
+      
+      ignoreTap = true;
       nameArr.clear();
       nameArrForDisplay.clear();
+      print("Shamshad");
+      print(nameArr.length);
+      print(nameArrForDisplay.length);
       var resp = await http.get(Uri.parse(
           "https://mapi.trycatchtech.com/v1/naamkaran/post_list_by_cat_and_gender?category_id=$catId&gender=$genderNo"));
       var jsonResp = json.decode(resp.body);
       for (var item in jsonResp) {
         nameArr.add(Name.fromJson(item));
       }
-      
       setState(() {
         isLoading = false;
+        ignoreTap = false;
         nameArrForDisplay = nameArr;
       });
-    } else {
-      setState(() {
-        isLoading = true;
-      });
-      nameApi(catId, genderNo);
-    }    
+    }
+ 
   }
 
   Widget bodyNameList(){
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.8), 
@@ -179,7 +202,6 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
           Expanded(
             child: ListView.separated(
               itemBuilder: (context,index){
-                print(nameArr[index].name);
                 return index == 0 ? searchBar() : listItem(index - 1);
               }, 
               separatorBuilder: (context,index){
@@ -208,13 +230,14 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
           contentPadding: EdgeInsets.all(10)
         ),
         onChanged: (text){
+
             text = text.toLowerCase();
-            setState(() {
-              
-              nameArrForDisplay = nameArr.where((tName) {
+            nameArrForDisplay = nameArr.where((tName) {
                 var tNameTitle = tName.name!.toLowerCase();
                 return tNameTitle.contains(text);
-              }).toList();
+              }).toSet().toList();
+            setState(() {
+              
             }); 
           } 
       ),
@@ -272,16 +295,35 @@ class _BoyClassState extends State<BoyClass> with SingleTickerProviderStateMixin
                 
                     SizedBox(width: 8,),
 
-                    Image.asset("assets/blue_copy@2x.png", 
-                      width: 35, 
-                      height: 35, 
+                   
+
+                    Material(
+                      child: InkWell(
+                        onTap: (){
+                          FlutterClipboard.copy("${nameArrForDisplay[index].name} \n${nameArrForDisplay[index].meaning}");
+                        },
+                        child: Image.asset("assets/blue_copy@2x.png", 
+                          width: 35, 
+                          height: 35, 
+                        ),
+                        splashColor: Colors.blue,
+                      ),
                     ),
 
+                    
                     SizedBox(width: 8,),
                   
-                    Image.asset("assets/blue_share@2x.png", 
-                      width: 35, 
-                      height: 35, 
+                    Material(
+                      child: InkWell(
+                        onTap: (){
+                          Share.share("${nameArrForDisplay[index].name} \n${nameArrForDisplay[index].meaning}");
+                        },
+                        child: Image.asset("assets/blue_share@2x.png", 
+                          width: 35, 
+                          height: 35, 
+                        ),
+                        splashColor: Colors.blue,
+                      ),
                     ),
                   ],
                 )

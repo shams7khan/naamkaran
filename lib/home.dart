@@ -1,5 +1,5 @@
 import 'package:app_naamkaran/boy.dart';
-import 'package:app_naamkaran/girl.dart';
+import 'package:app_naamkaran/girl_update.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -38,7 +38,7 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     GestureDetector( 
                       onTap: (){
-                        Get.to(GirlClass());
+                        Get.to(GirlUpdate());
                       },
                       child: Image.asset("assets/home/girl.png",
                        width: (MediaQuery.of(context).size.width - 10)/2,
